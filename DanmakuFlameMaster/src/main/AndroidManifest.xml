@@ -20,6 +20,6 @@
     android:versionCode="2010"
     android:versionName="v0.2.1" >
 
-    <uses-sdk android:minSdkVersion="17" />
+    <uses-sdk android:minSdkVersion="9" />
 
 </manifest>

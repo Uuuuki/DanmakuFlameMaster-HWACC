@@ -18,7 +18,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_LIB_FOLDER:= ../obj/local/$(TARGET_ARCH_ABI)
+LOCAL_LIB_FOLDER:= ../../../DanmakuFlameMaster/src/main/obj/local/$(TARGET_ARCH_ABI)
 LOCAL_MODULE    := libndkbitmap
 LOCAL_SRC_FILES := $(LOCAL_LIB_FOLDER)/libndkbitmap.so
 
@@ -31,7 +31,6 @@ LOCAL_SHARED_LIBRARYS := libndkbitmap
 
 LOCAL_MODULE    := DFMACC
 LOCAL_SRC_FILES := jni_entry.cpp \
-                   ndk_bitmap.cpp \
                    skia_redirector_jni.cpp \
                    version_utils.cpp \
                    sk_stupid_renderer_16.cpp \

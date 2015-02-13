@@ -17,7 +17,6 @@
 #ifndef _SK_STUPID_RENDERER_16_HPP
 #define _SK_STUPID_RENDERER_16_HPP
 
-#include <pthread.h>
 #include "version_utils.hpp"
 #include "sk_stupid_renderer_base.hpp"
 
@@ -61,11 +60,15 @@ private:
     AndroidVersion mAndroidVersion;
     int mWidth = 0, mHeight = 0;
     int mMSAASampleCount = 0;
-    void* mLibraryHandle = nullptr;
+    void* mLibSkia = nullptr;
+    void* mLibSkiaGpu = nullptr;
     bool mSymbolsLoaded = false;
     bool mSymbolsComplete = false;
+    bool hasBackend = false;
     SkCanvas_t* mCanvas = nullptr;
-    pthread_mutex_t mCanvasMutex;
+    GrContext_t* mContext = nullptr;
+    const GrGLInterface_t* mInterface = nullptr;
+    GrRenderTarget_t* mRenderTarget = nullptr;
 };
 
 #endif // _SK_STUPID_RENDERER_16_HPP

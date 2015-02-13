@@ -18,6 +18,7 @@
 #define _SK_STUPID_DEF_18_HPP
 
 #include <cstdint>
+#include <cstring>
 #include "sk_stupid_common_def.hpp"
 
 #define SK_GR_GL_FRAMEBUFFER_BINDING  0x8CA6

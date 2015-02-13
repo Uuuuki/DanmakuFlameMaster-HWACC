@@ -39,6 +39,7 @@ public class SkStupidView extends GLSurfaceView {
     
     static {
         try {
+            System.loadLibrary("skiagpu");
             System.loadLibrary("DFMACC");
         } catch (UnsatisfiedLinkError e) {
             throw e;

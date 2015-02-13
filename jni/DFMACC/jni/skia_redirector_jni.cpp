@@ -28,7 +28,7 @@
     #define NELEM(x) ((int)(sizeof(x) / sizeof((x)[0])))
 #endif
 
-static const int minSdkVersion = 18;
+static const int minSdkVersion = 16;
 static const int maxSdkVersion = 21;
 static bool isDeviceSupported = false;
 
@@ -48,8 +48,9 @@ static bool testIsDeviceSupported() {
     if (apiLevel >= minSdkVersion && apiLevel <= maxSdkVersion) {
         SkStupidRendererBase* testRenderer = nullptr;
 
-        if (false/*SkStupidRenderer_16::supportApi(apiLevel)*/) {
-            //testRenderer = new SkStupidRenderer_16(nullptr);
+        if (SkStupidRenderer_16::supportApi(apiLevel)) {
+            testRenderer = new SkStupidRenderer_16(nullptr);
+            __android_log_print(ANDROID_LOG_DEBUG, "SkiaRedirector", "Renderer: SkStupidRenderer_16");
         } else if (SkStupidRenderer_18::supportApi(apiLevel)) {
             testRenderer = new SkStupidRenderer_18(nullptr);
         } else {
@@ -69,8 +70,8 @@ static SkStupidRendererBase* createCompatibleRenderer() {
     }
 
     int apiLevel = getDeviceApiLevel();
-    if (false/*SkStupidRenderer_16::supportApi(apiLevel)*/) {
-        //return new SkStupidRenderer_16(nullptr);
+    if (SkStupidRenderer_16::supportApi(apiLevel)) {
+        return new SkStupidRenderer_16(nullptr);
     } else if (SkStupidRenderer_18::supportApi(apiLevel)) {
         return new SkStupidRenderer_18(nullptr);
     }
@@ -86,6 +87,7 @@ static jlong nativeInit(JNIEnv* env, jobject thiz, jint width, jint height, jint
     __android_log_print(ANDROID_LOG_DEBUG, "SkiaRedirector", "nativeInit");
 
     if (isDeviceSupported == false) {
+        __android_log_print(ANDROID_LOG_WARN, "SkiaRedirector", "Device not supported: API %d", getDeviceApiLevel());
         return 0;
     }
 

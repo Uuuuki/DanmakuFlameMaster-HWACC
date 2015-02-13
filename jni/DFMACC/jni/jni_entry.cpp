@@ -27,7 +27,7 @@
 static const int jniVersion = JNI_VERSION_1_4;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* jvm, void* reserved) {
-    __android_log_print(ANDROID_LOG_DEBUG, "libDFMACC.so", "JNI_OnLoad");
+    __android_log_print(ANDROID_LOG_DEBUG, "DFMACC", "JNI_OnLoad");
 
     JNIEnv* env = nullptr;
     if (jvm->GetEnv((void**)&env, jniVersion) != JNI_OK) {
@@ -42,7 +42,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* jvm, void* reserved) {
 }
 
 JNIEXPORT void JNICALL JNI_OnUnload(JavaVM* jvm, void* reserved) {
-    __android_log_print(ANDROID_LOG_DEBUG, "libDFMACC.so", "JNI_OnUnload");
+    __android_log_print(ANDROID_LOG_DEBUG, "DFMACC", "JNI_OnUnload");
 
     termSkiaRedirectorJni();
 }

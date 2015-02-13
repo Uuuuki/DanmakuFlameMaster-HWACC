@@ -20,11 +20,6 @@
 #include "version_utils.hpp"
 #include "sk_stupid_renderer_base.hpp"
 
-enum SkBackEndTypes_t {
-    kNone_BackEndType,
-    kNativeGL_BackEndType
-};
-
 class SkStupidRenderer_18 : public SkStupidRendererBase {
 public:
     static bool supportApi(int api);
@@ -68,8 +63,8 @@ private:
     void* mLibraryHandle = nullptr;
     bool mSymbolsLoaded = false;
     bool mSymbolsComplete = false;
+    bool hasBackend = false;
     SkCanvas_t* mCanvas = nullptr;
-    SkBackEndTypes_t mBackendType = kNone_BackEndType;
     GrContext_t* mCurrentContext = nullptr;
     const GrGLInterface_t* mCurrentInterface = nullptr;
     GrRenderTarget_t* mCurrentRenderTarget = nullptr;

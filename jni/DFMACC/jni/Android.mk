@@ -24,10 +24,18 @@ LOCAL_SRC_FILES := $(LOCAL_LIB_FOLDER)/libndkbitmap.so
 
 include $(PREBUILT_SHARED_LIBRARY)
 
+include $(CLEAR_VARS)
+
+LOCAL_LIB_FOLDER:= ../../../../libs/armeabi-v7a
+LOCAL_MODULE    := libskiagpu
+LOCAL_SRC_FILES := $(LOCAL_LIB_FOLDER)/libskiagpu.so
+
+include $(PREBUILT_SHARED_LIBRARY)
+
 
 include $(CLEAR_VARS)
 
-LOCAL_SHARED_LIBRARYS := libndkbitmap
+LOCAL_SHARED_LIBRARYS := libndkbitmap libskiagpu
 
 LOCAL_MODULE    := DFMACC
 LOCAL_SRC_FILES := jni_entry.cpp \

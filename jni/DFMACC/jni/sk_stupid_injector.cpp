@@ -49,25 +49,26 @@ void SkStupidInjector::loadSymbols(JNIEnv* env) {
     }
 
     jclass clazz = env->FindClass("android/graphics/Canvas");
-    mJavaCanvasClass = (jclass)env->NewGlobalRef(clazz);
+    mCanvasClass = (jclass)env->NewGlobalRef(clazz);
     env->DeleteLocalRef(clazz);
 
     if (mApiLevel >= 20) {  // Android 4.4w+
-        mJavaCanvasCtorID = env->GetMethodID(mJavaCanvasClass, "<init>", "(J)V"); // 4.4w+ use int64 to store pointer
+        mCanvasCtorID = env->GetMethodID(mCanvasClass, "<init>", "(J)V"); // 4.4w+ use int64 to store pointer
     } else {                // before
-        mJavaCanvasCtorID = env->GetMethodID(mJavaCanvasClass, "<init>", "(I)V");
+        mCanvasCtorID = env->GetMethodID(mCanvasClass, "<init>", "(I)V");
     }
 
     if (mApiLevel >= 19) {
-        mJavaCanvasReleaseID = env->GetMethodID(mJavaCanvasClass, "release", "()V");
+        mCanvasReleaseID = env->GetMethodID(mCanvasClass, "release", "()V");
     } else {
-        /*jclass clazz = env->FindClass("android/graphics/Canvas$CanvasFinalizer");
-        mJavaCanvasFinalizerClass = (jclass)env->NewGlobalRef(clazz);
+        jclass clazz = env->FindClass("android/graphics/Canvas$CanvasFinalizer");
+        mCanvasFinalizerClass = (jclass)env->NewGlobalRef(clazz);
         env->DeleteLocalRef(clazz);
 
-        mJavaCanvasFinalizer = env->GetFieldID(mJavaCanvasClass, "mFinalizer", "android/graphics/Canvas$CanvasFinalizer");
-        mJavaCanvasFinalizerHandleID = env->GetFieldID(mJavaCanvasFinalizerClass, "mNativeCanvas", "I");
-        mJavaCanvasHandleID = env->GetFieldID(mJavaCanvasClass, "mNativeCanvas", "I");*/
+        mCanvasFinalizerID = env->GetFieldID(mCanvasClass, "mFinalizer", "Landroid/graphics/Canvas$CanvasFinalizer;");
+        mCanvasFinalizerHandleID = env->GetFieldID(mCanvasFinalizerClass, "mNativeCanvas", "I");
+        mCanvasFinalizerFinalizeID = env->GetMethodID(mCanvasFinalizerClass, "finalize", "()V");
+        mCanvasHandleID = env->GetFieldID(mCanvasClass, "mNativeCanvas", "I");
     }
 
     mSymbolsComplete = checkSymbols();
@@ -78,20 +79,20 @@ bool SkStupidInjector::checkSymbols() {
         return false;
     }
 
-    if (mJavaCanvasClass == nullptr || mJavaCanvasCtorID == nullptr) {
+    if (mCanvasClass == nullptr || mCanvasCtorID == nullptr) {
         return false;
     }
 
-    if (mApiLevel >= 19 && mJavaCanvasReleaseID == nullptr) {
+    if (mApiLevel >= 19 && mCanvasReleaseID == nullptr) {
         return false;
     }
 
-    /*if (mApiLevel < 19) {
-        if (mJavaCanvasFinalizerClass == nullptr || mJavaCanvasFinalizer == nullptr
-            || mJavaCanvasFinalizerHandleID == nullptr || mJavaCanvasHandleID == nullptr) {
+    if (mApiLevel < 19) {
+        if (mCanvasFinalizerClass == nullptr || mCanvasFinalizerID == nullptr || mCanvasFinalizerHandleID == nullptr
+            || mCanvasFinalizerFinalizeID == nullptr || mCanvasHandleID == nullptr) {
             return false;
         }
-    }*/
+    }
 
     return true;
 }
@@ -101,19 +102,30 @@ bool SkStupidInjector::isDeviceSupported() {
 }
 
 void SkStupidInjector::dispose(JNIEnv* env) {
-    if (mJavaCanvas) {
+    if (mCanvas) {
         if (mApiLevel >= 19) {
-            env->CallVoidMethod(mJavaCanvas, mJavaCanvasReleaseID);
+            env->CallVoidMethod(mCanvas, mCanvasReleaseID);
         } else {
-
+        	jobject finalizer = env->GetObjectField(mCanvas, mCanvasFinalizerID);
+        	env->CallVoidMethod(finalizer, mCanvasFinalizerFinalizeID);
+        	env->SetIntField(finalizer, mCanvasFinalizerHandleID, 0);
+        	env->SetIntField(finalizer, mCanvasHandleID, 0);
+        	env->DeleteLocalRef(finalizer);
         }
-        env->DeleteGlobalRef(mJavaCanvas);
-        mJavaCanvas = nullptr;
+        env->DeleteGlobalRef(mCanvas);
+        mCanvas = nullptr;
     }
-    if (mJavaCanvasClass) {
-        env->DeleteGlobalRef(mJavaCanvasClass);
-        mJavaCanvasClass = nullptr;
+
+    if (mCanvasClass) {
+        env->DeleteGlobalRef(mCanvasClass);
+        mCanvasClass = nullptr;
     }
+
+    if (mApiLevel < 19 && mCanvasFinalizerClass) {
+    	env->DeleteGlobalRef(mCanvasFinalizerClass);
+    	mCanvasFinalizerClass = nullptr;
+    }
+
     if (mApiLevel >= 21 && mRTLibrary) {
         dlclose(mRTLibrary);
         mRTLibrary = nullptr;
@@ -129,14 +141,18 @@ jobject SkStupidInjector::getJavaCanvas(JNIEnv* env, SkCanvas_t* skcanvas) {
     if (mSkCanvas != skcanvas) {
         mSkCanvas = skcanvas;
 
-        if (mJavaCanvas) {
+        if (mCanvas) {
             if (mApiLevel >= 19) {
-                env->CallVoidMethod(mJavaCanvas, mJavaCanvasReleaseID);
+                env->CallVoidMethod(mCanvas, mCanvasReleaseID);
             } else {
-
+            	jobject finalizer = env->GetObjectField(mCanvas, mCanvasFinalizerID);
+            	env->CallVoidMethod(finalizer, mCanvasFinalizerFinalizeID);
+            	env->SetIntField(finalizer, mCanvasFinalizerHandleID, 0);
+            	env->SetIntField(finalizer, mCanvasHandleID, 0);
+            	env->DeleteLocalRef(finalizer);
             }
-            env->DeleteGlobalRef(mJavaCanvas);
-            mJavaCanvas = nullptr;
+            env->DeleteGlobalRef(mCanvas);
+            mCanvas = nullptr;
         }
 
         if (mApiLevel >= 20) {  // Android 4.4w+
@@ -147,13 +163,13 @@ jobject SkStupidInjector::getJavaCanvas(JNIEnv* env, SkCanvas_t* skcanvas) {
             } else {                // Android 4.4w
                 canvasWrapper = mSkCanvas;
             }
-            mJavaCanvas = env->NewObject(mJavaCanvasClass, mJavaCanvasCtorID, reinterpret_cast<jlong>(canvasWrapper));
+            mCanvas = env->NewObject(mCanvasClass, mCanvasCtorID, reinterpret_cast<jlong>(canvasWrapper));
         } else {                // before
             mSkCanvas->ref();
-            mJavaCanvas = env->NewObject(mJavaCanvasClass, mJavaCanvasCtorID, reinterpret_cast<jint>(mSkCanvas));
+            mCanvas = env->NewObject(mCanvasClass, mCanvasCtorID, reinterpret_cast<jint>(mSkCanvas));
         }
 
-        mJavaCanvas = env->NewGlobalRef(mJavaCanvas);
+        mCanvas = env->NewGlobalRef(mCanvas);
     }
-    return mJavaCanvas;
+    return mCanvas;
 }

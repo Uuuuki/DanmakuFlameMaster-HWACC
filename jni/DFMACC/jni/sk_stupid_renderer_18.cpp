@@ -18,7 +18,6 @@
 
 #include <malloc.h>
 #include <dlfcn.h>
-#include <pthread.h>
 #include <GLES2/gl2.h>
 #include <android/log.h>
 #include "version_utils.hpp"
@@ -42,7 +41,7 @@ SkStupidRenderer_18::SkStupidRenderer_18(void* nativeHandle) {
 }
 
 SkStupidRenderer_18::~SkStupidRenderer_18() {
-    if (mBackendType != kNone_BackEndType) {
+    if (hasBackend) {
         teardownBackend();
     }
 
@@ -69,6 +68,7 @@ void SkStupidRenderer_18::loadSymbols() {
     mLibraryHandle = dlopen("libskia.so", RTLD_NOW | RTLD_LOCAL);
     if (mLibraryHandle == nullptr) {
         mSymbolsLoaded = false; mSymbolsComplete = false;
+        __android_log_print(ANDROID_LOG_ERROR, "SkStupidRenderer_18", "Open libskia.so failed");
         return;
     }
 
@@ -117,7 +117,7 @@ bool SkStupidRenderer_18::checkSymbols() {
             SkCanvas_Symbol.Dtor) {
             return true;
         } else {
-            __android_log_print(ANDROID_LOG_WARN, "SkStupidRenderer_18", "Symbols: %p,%p,%p,%p,%p,%p,%p,%p,%p,%p,%p",
+            __android_log_print(ANDROID_LOG_WARN, "SkStupidRenderer_18", "Symbol miss: %p,%p,%p,%p,%p,%p,%p,%p,%p,%p,%p",
                     GrGLInterface_Symbol.GrGLCreateNativeInterface, GrContext_Symbol.Create, GrContext_Symbol.contextDestroyed,
                     GrContext_Symbol.wrapBackendRenderTarget, GrContext_Symbol.flush, GrContext_Symbol.Dtor,
                     GrRenderTarget_Symbol.Dtor, SkGpuDevice_Symbol.Ctor, SkGpuDevice_Symbol.Dtor, SkCanvas_Symbol.Ctor, SkCanvas_Symbol.Dtor);
@@ -137,18 +137,16 @@ bool SkStupidRenderer_18::setupBackend(int width, int height, int msaaSampleCoun
         return false;
     }
 
-    DbgAssert(mBackendType == kNone_BackEndType);
+    DbgAssert(hasBackend == false);
     DbgAssert(mCurrentContext == nullptr);
     DbgAssert(mCurrentInterface == nullptr);
     DbgAssert(mCurrentRenderTarget == nullptr);
 
     mMSAASampleCount = msaaSampleCount;
-    mBackendType = kNativeGL_BackEndType;
-
-    GrGLInterface_t* glInterface = GrGLInterface_Symbol.GrGLCreateNativeInterface();
-    mCurrentInterface = glInterface;
-
+    mCurrentInterface = GrGLInterface_Symbol.GrGLCreateNativeInterface();
     mCurrentContext = GrContext_Symbol.Create(GrBackend_t::kOpenGL_GrBackend, (GrBackendContext_t)mCurrentInterface);
+
+    hasBackend = true;
 
     if (mCurrentContext == nullptr || mCurrentInterface == nullptr) {
         __android_log_print(ANDROID_LOG_ERROR, "SkStupidRenderer_18",
@@ -157,7 +155,7 @@ bool SkStupidRenderer_18::setupBackend(int width, int height, int msaaSampleCoun
         Sk_SafeUnref(mCurrentInterface);
         mCurrentContext = nullptr;
         mCurrentInterface = nullptr;
-        mBackendType = kNone_BackEndType;
+        hasBackend = false;
 
         return false;
     }
@@ -187,7 +185,7 @@ bool SkStupidRenderer_18::teardownBackend() {
     Sk_SafeUnref(mCurrentRenderTarget, (void*)GrRenderTarget_Symbol.Dtor);
     mCurrentRenderTarget = nullptr;
 
-    mBackendType = kNone_BackEndType;
+    hasBackend = false;
     return true;
 }
 
